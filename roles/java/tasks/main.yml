@@ -1,0 +1,47 @@
+---
+- name: ensure java_install_directory exists
+  file:
+    path: "{{ java_install_directory }}"
+    state: directory
+  when:
+    - java_vendor == "oracle"
+    - java_format == "targz"
+  tag: java
+
+- name: Unarchive oracle java tarball
+  unarchive:
+    src: "{{ java_oracle_package }}"
+    dest: "{{ java_install_directory }}"
+  when:
+    - java_type == "jdk"
+    - java_version == 8
+    - java_format == "targz"
+    - java_vendor == "oracle"
+  tag: java
+    
+- name: Download the JCE policy for oracle-jdk8
+  get_url: 
+    url: "{{ jce_download_url }}"
+    dest: "/tmp/jce_policy-8.zip"
+  tag: java
+  
+- name: install oracle java policy software (targz)
+  unarchive:
+    src: "/tmp/jce_policy-8.zip"
+    dest: "{{ java_install_directory }}"
+  when:
+    - java_jce
+    - java_version == 8
+    - java_vendor == "oracle"
+  tag: java
+
+- name: set alternative (targz)
+  alternatives:
+    name: java
+    link: /usr/bin/java
+    path: "{{ java_install_directory }}/{{ java_oracle_directory }}/bin/java"
+  when:
+    - java_format == "targz"
+    - ansible_distribution != "Alpine"
+    - java_vendor == "oracle"
+  tag: java
